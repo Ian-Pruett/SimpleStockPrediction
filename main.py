@@ -98,24 +98,34 @@ def main():
 
     plt.plot(y_test)
     plt.plot(predictions)
-    plt.show()
+    # plt.show()
 
     # lets try predicting a year with only a month
 
     past = np.copy(X_test)
-    predictions = []
+    generated = []
     days = len(X_test)
 
-    for d in range(days-1):
+    for d in range(1,days-1):
         
-        new_data = np.zeros((30,1))
-        new_data[0:28] = past[d][0:28]
+        new_data = np.ones((30,1))
+        new_data[0:29] = past[d-1][1:30]
         
-        predict = model.predict([past[d]])
-        new_data[28:29] = np.array([predict])
-        predictions.append(predict)
+        predict = model.predict([[past[d-1]]])
+        new_data[29:30] = np.array(predict)
+        generated.append(predict)
         
-        past[d+1] = new_data
+        past[d] = new_data
+
+    generated = np.array(generated)
+
+    generated = generated.reshape(-1, generated.shape[-1])
+
+    print(y_test.shape)
+    print(generated.shape)
+
+    plt.plot(generated)
+    plt.show()
 
 if __name__ == '__main__':
     main()
