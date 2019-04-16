@@ -3,11 +3,9 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 import tensorflow as tf
-# from tensorflow.keras import Sequential
-# from tensorflow.keras.layers import Dense, Dropout
-# from tensorflow.keras.layers import LSTM, TimeDistributed
-
-import tensorflow.keras as keras
+from tensorflow.keras import Sequential
+from tensorflow.keras.layers import Dense, Dropout
+from tensorflow.keras.layers import LSTM, TimeDistributed
 
 
 # define base directory
@@ -62,10 +60,10 @@ def split_train_test(X,y,test_size=.33):
 
 
 def simple_lstm_network(time_steps,predict_steps):
-    model = keras.Sequential()
+    model = Sequential()
 
     # first layer
-    model.add(keras.layers.LSTM(
+    model.add(LSTM(
         units=time_steps,
         # return_sequences=True,
         activation='tanh',
@@ -75,10 +73,10 @@ def simple_lstm_network(time_steps,predict_steps):
         use_bias=True,
     ))
     
-    model.add(keras.layers.Dropout(0.2))
+    model.add(Dropout(0.2))
 
     # output layer
-    model.add((keras.layers.Dense(predict_steps)))
+    model.add((Dense(predict_steps)))
     
 
     model.compile(
