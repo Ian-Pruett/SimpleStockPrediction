@@ -59,10 +59,40 @@ def split_train_test(X,y,test_size=.33):
     return X_train,X_test,y_train,y_test
 
 
+# given Sequential model and input X,
+# predict y up to k steps in the future
+# default is to predict 1 step fowards
+def time_series_predict(model,X,k=1):
+    
+    p = len(X[1]) # previous steps looking back
+
+    @np.vectorize
+    def predict_foward_steps(x):
+        # queue predictions foward
+        queue = np.zeros(k) 
+
+        for i in range(k):
+            # allocate array d to be made of
+            # values of x and prev predictions
+            d = np.zeros(shape=x.shape)
+            # add in x values to d
+            d[0:(p-i-1)] = x[i:(i+p-1)]
+            # add in previous predicted values
+            # ONLY IF previous predictions were made
+            if len(np.where(queue != 0)) > 0:
+                d[(p-i-1):(p-1)] = queue[0:i]
+            # make prediction and add to queue
+            queue[i] = model.predict([d])
+
+        return queue
+
+    return predict_foward_steps(X)            
+
+
 def simple_lstm_network(time_steps,predict_steps):
     model = Sequential()
 
-    # first layer
+    # first layer  
     model.add(LSTM(
         units=time_steps,
         return_sequences=True,
