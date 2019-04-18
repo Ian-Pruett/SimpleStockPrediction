@@ -65,10 +65,21 @@ def simple_lstm_network(time_steps,predict_steps):
     # first layer
     model.add(LSTM(
         units=time_steps,
+        return_sequences=True,
+        activation='tanh',
+        recurrent_activation='sigmoid',
+        unroll=False,
+        use_bias=True,
+    ))
+    
+    model.add(Dropout(0.2))
+
+    # second layer
+    model.add(LSTM(
+        units=time_steps // 2,
         # return_sequences=True,
         activation='tanh',
         recurrent_activation='sigmoid',
-        recurrent_dropout=0,
         unroll=False,
         use_bias=True,
     ))
@@ -76,6 +87,7 @@ def simple_lstm_network(time_steps,predict_steps):
     model.add(Dropout(0.2))
 
     # output layer
+    # model.add(TimeDistributed(Dense(predict_steps)))
     model.add((Dense(predict_steps)))
     
 
@@ -93,7 +105,7 @@ def main():
     dataframe = load_dataframe('aapl')
 
     time_steps = 30
-    predict_steps = 7
+    predict_steps = 1
 
     X,y = process_dataset(
         dataframe,
@@ -127,8 +139,8 @@ def main():
     loss, acc = model.evaluate(X_test,y_test)
     print('Loss: %f\tAcc: %f' % (loss,acc))
 
-    plt.plot(y_test)
-    plt.plot(predictions)
+    plt.plot(y_test.flatten())
+    plt.plot(predictions.flatten())
     plt.show()
    
 
