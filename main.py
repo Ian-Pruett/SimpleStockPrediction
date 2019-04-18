@@ -25,14 +25,18 @@ def load_dataframe(stock):
 
 def load_dataset(stock):
     filepath = base_dir + 'data/Stocks/' + stock + '.us.txt'
-    data = np.loadtxt(fname = filepath, )
+    data = np.loadtxt(fname = filepath, dtype=str, delimiter=',')
+    data = data[1:]
+    data = data[:,:2]
+    return data
+
+
 
 
 # look_back is the number of times steps to look back
 # where as look_ahead is the number of times steps
 # to predict
-def process_dataset(frame,look_back=1,look_ahead=1):
-    D = frame.values.astype('float32')
+def process_dataset(D,look_back=1,look_ahead=1):
     
     # scale data between 0,1
     scaler = MinMaxScaler(feature_range=(0,1))
@@ -143,13 +147,16 @@ def simple_lstm_network(time_steps,predict_steps):
 
 
 def main():
-    dataframe = load_dataframe('aapl')
+    #preprocessing the data
+    D = load_dataset('aapl')
+    D = D[:,1].astype(float)
+    D = np.expand_dims(D,axis=2)
 
     time_steps = 30
     predict_steps = 1
 
     X,y = process_dataset(
-        dataframe,
+        D,
         look_back=time_steps,
         look_ahead=predict_steps
     )
