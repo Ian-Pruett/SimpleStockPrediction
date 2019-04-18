@@ -59,6 +59,13 @@ def split_train_test(X,y,test_size=.33):
     return X_train,X_test,y_train,y_test
 
 
+def split_dataset_train_test(D,test_size=.33):
+    t = int(len(X) * (1-test_size))
+    D_train = D[0:t]
+    D_test = D[t:len(D)]
+    return D_train,D_test
+
+
 # given Sequential model and input X,
 # predict y up to k steps in the future
 # default is to predict 1 step fowards
@@ -173,6 +180,15 @@ def main():
     plt.plot(predictions.flatten())
     plt.show()
    
+
+def main1():
+    dataframe = load_dataframe('aapl')
+
+    time_steps = 30
+    predict_steps = 1
+    
+    split_dataset_train_test(D,test_size=.33)
+    
 
 if __name__ == '__main__':
     main()
