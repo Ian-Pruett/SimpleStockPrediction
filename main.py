@@ -23,6 +23,10 @@ def load_dataframe(stock):
     )
     return dataframe
 
+def load_dataset(stock):
+    filepath = base_dir + 'data/Stocks/' + stock + '.us.txt'
+    data = np.loadtxt(fname = filepath, )
+
 
 # look_back is the number of times steps to look back
 # where as look_ahead is the number of times steps
