@@ -31,8 +31,6 @@ def load_dataset(stock):
     return data
 
 
-
-
 # look_back is the number of times steps to look back
 # where as look_ahead is the number of times steps
 # to predict
@@ -68,7 +66,7 @@ def split_train_test(X,y,test_size=.33):
 
 
 def split_dataset_train_test(D,test_size=.33):
-    t = int(len(X) * (1-test_size))
+    t = int(len(D) * (1-test_size))
     D_train = D[0:t]
     D_test = D[t:len(D)]
     return D_train,D_test
@@ -79,9 +77,8 @@ def split_dataset_train_test(D,test_size=.33):
 # default is to predict 1 step fowards
 def time_series_predict(model,X,k=1):
     
-    p = len(X[1]) # previous steps looking back
+    p = len(X[0]) # previous steps looking back
 
-    @np.vectorize
     def predict_foward_steps(x):
         # queue predictions foward
         queue = np.zeros(k) 
@@ -89,22 +86,28 @@ def time_series_predict(model,X,k=1):
         for i in range(k):
             # allocate array d to be made of
             # values of x and prev predictions
-            d = np.zeros(shape=x.shape)
+            d = np.zeros(len(x))
             # add in x values to d
-            d[0:(p-i-1)] = x[i:(i+p-1)]
+            d[0:(p-i)] = x[i:(i+p)]
             # add in previous predicted values
             # ONLY IF previous predictions were made
             if len(np.where(queue != 0)) > 0:
-                d[(p-i-1):(p-1)] = queue[0:i]
+                d[(p-i):(p)] = queue[0:i]
             # make prediction and add to queue
+            d = np.expand_dims(d,axis=1)
+            d = np.expand_dims(d,axis=2)
+            print(d.shape)
+            thing = model.predict([d])
+            print(thing.shape)
+            print(thing)
             queue[i] = model.predict([d])
 
         return queue
 
-    return predict_foward_steps(X)            
+    return np.apply_along_axis(predict_foward_steps,1,X)            
 
 
-def simple_lstm_network(time_steps,predict_steps):
+def simple_lstm_network(time_steps):
     model = Sequential()
 
     # first layer  
@@ -133,7 +136,7 @@ def simple_lstm_network(time_steps,predict_steps):
 
     # output layer
     # model.add(TimeDistributed(Dense(predict_steps)))
-    model.add((Dense(predict_steps)))
+    model.add((Dense(1)))
     
 
     model.compile(
@@ -153,25 +156,33 @@ def main():
     D = np.expand_dims(D,axis=2)
 
     time_steps = 30
-    predict_steps = 1
+    predict_steps = 7
 
-    X,y = process_dataset(
-        D,
+    D_test,D_train = split_dataset_train_test(D)
+
+    X_train,y_train = process_dataset(
+        D_train,
+        look_back=time_steps,
+        look_ahead=1
+    )
+
+    X_test,y_test = process_dataset(
+        D_test,
         look_back=time_steps,
         look_ahead=predict_steps
     )
 
-    X = np.expand_dims(X,axis=2)
+    X_train = np.expand_dims(X_train,axis=2)
+    X_test = np.expand_dims(X_test,axis=2)
     # y = np.expand_dims(y,axis=1)
 
-    X_train,X_test,y_train,y_test = split_train_test(
-        X,y,
-        test_size=.33
-    )
+    # X_train,X_test,y_train,y_test = split_train_test(
+    #     X,y,
+    #     test_size=.33
+    # )
 
     model = simple_lstm_network(
-        time_steps=time_steps,
-        predict_steps=predict_steps,
+        time_steps=time_steps
     )
 
     model.fit(
@@ -180,7 +191,11 @@ def main():
         epochs=5
     )
 
-    predictions = model.predict([X_test])
+    # predictions = model.predict([X_test])
+    predictions = time_series_predict(
+        model,X_train,
+        k=predict_steps
+    )
 
     # loss, acc, mae = model.evaluate(X_test,y_test)
     # print('Loss: %f\tAcc: %f\tMAE: %f' % (loss,acc,mae))
@@ -191,15 +206,6 @@ def main():
     plt.plot(predictions.flatten())
     plt.show()
    
-
-def main1():
-    dataframe = load_dataframe('aapl')
-
-    time_steps = 30
-    predict_steps = 1
-    
-    split_dataset_train_test(D,test_size=.33)
-    
 
 if __name__ == '__main__':
     main()
