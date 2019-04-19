@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import pandas as pd
+from sklearn.metrics import mean_absolute_error
+from sklearn.metrics import mean_squared_error
 from sklearn.preprocessing import MinMaxScaler
 import tensorflow as tf
 from tensorflow.keras import Sequential
@@ -48,7 +49,6 @@ def process_dataset(D,look_back=1,look_ahead=1):
         y.append(y_entry)
 
     return np.array(X),np.array(y)
-
 
 
 # Splits dataset into train and test given 
@@ -139,7 +139,6 @@ def simple_lstm_network(time_steps):
         loss='mse',
         optimizer='adam',
         metrics=['accuracy','mae']
-        # metrics=['accuracy']
     )
 
     return model
@@ -147,7 +146,7 @@ def simple_lstm_network(time_steps):
 
 def main():
     #preprocessing the data
-    D = load_dataset('aapl')
+    D = load_dataset('msft')
     D = D[:,1].astype(float)
     D = np.expand_dims(D,axis=2)
 
@@ -174,33 +173,37 @@ def main():
     X_train = np.expand_dims(X_train,axis=2)
     X_test = np.expand_dims(X_test,axis=2)
 
-    model = simple_lstm_network(
-        time_steps=time_steps
-    )
+    # model = simple_lstm_network(
+    #     time_steps=time_steps
+    # )
 
-    model.fit(
-        X_train,y_train,
-        batch_size=10,
-        epochs=5
-    )
+    # model.fit(
+    #     X_train,y_train,
+    #     batch_size=10,
+    #     epochs=5
+    # )
 
     # model.save('models/my_baby.model')
 
-    # model = tf.keras.models.load_model('models/my_baby.model')
+    model = tf.keras.models.load_model('models/my_baby.model')
 
     # predictions = model.predict([X_test])
-    predictions = time_series_predict(
+    y_pred = time_series_predict(
         model,X_test,k=predict_steps
     )
 
-    # loss, acc, mae = model.evaluate(X_test,y_test)
-    # print('Loss: %f\tAcc: %f\tMAE: %f' % (loss,acc,mae))
-    # loss, acc = model.evaluate(X_test,y_test)
-    # print('Loss: %f\tAcc: %f' % (loss,acc))
+    y_pred = y_pred.flatten()
+    y_test = y_test.flatten()
 
-    ground_truth = y_test.flatten()
-    plt.plot(ground_truth)
-    plt.plot(predictions.flatten())
+    # loss, acc, mae = model.evaluate(X_test,y_test)
+
+    mae = mean_absolute_error(y_test, y_pred)
+    mse = mean_squared_error(y_test, y_pred)
+
+    print('MSE: %f\tMAE: %f' % (mse,mae))
+
+    plt.plot(y_test)
+    plt.plot(y_pred)
     plt.show()
    
 
