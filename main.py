@@ -144,6 +144,30 @@ def simple_lstm_network(time_steps):
     return model
 
 
+# return the error over k steps foward
+# error is returned as numpy array and
+# given by whatever metric is assigned
+def err_over_steps(D,p,k,model,metric):
+    err = np.zeros(k)  # allocate array
+    # predict time steps from 1 to k steps
+    for i in range(1,k):
+        X,y_true = process_dataset(
+            D,look_back=p,look_ahead=i
+        )
+        y_pred = time_series_predict(
+            model,X,k=i
+        )
+
+        y_pred = y_pred.flatten()
+        y_true = y_true.flatten()
+
+        err[i] = metric(y_true,y_pred)
+
+        # print(err[i])
+
+    return err
+
+
 def main():
     #preprocessing the data
     D = load_dataset('msft')
@@ -173,21 +197,18 @@ def main():
     X_train = np.expand_dims(X_train,axis=2)
     X_test = np.expand_dims(X_test,axis=2)
 
-    # model = simple_lstm_network(
-    #     time_steps=time_steps
-    # )
+    model = simple_lstm_network(
+        time_steps=time_steps
+    )
 
-    # model.fit(
-    #     X_train,y_train,
-    #     batch_size=10,
-    #     epochs=5
-    # )
+    model.fit(
+        X_train,y_train,
+        batch_size=10,
+        epochs=5
+    )
 
     # model.save('models/my_baby.model')
 
-    model = tf.keras.models.load_model('models/my_baby.model')
-
-    # predictions = model.predict([X_test])
     y_pred = time_series_predict(
         model,X_test,k=predict_steps
     )
@@ -195,17 +216,24 @@ def main():
     y_pred = y_pred.flatten()
     y_test = y_test.flatten()
 
-    # loss, acc, mae = model.evaluate(X_test,y_test)
-
     mae = mean_absolute_error(y_test, y_pred)
     mse = mean_squared_error(y_test, y_pred)
 
     print('MSE: %f\tMAE: %f' % (mse,mae))
+    
+    # error over predict_steps
+    err = err_over_steps(
+        D_test,
+        time_steps,
+        predict_steps,
+        model,
+        mean_absolute_error
+    )
 
     plt.plot(y_test)
     plt.plot(y_pred)
-    plt.show()
+    # plt.show()
    
 
 if __name__ == '__main__':
-    main()
+    main1()
