@@ -162,7 +162,6 @@ def err_over_steps(D,p,k,model,metric):
         y_true = y_true.flatten()
 
         err[i] = metric(y_true,y_pred)
-
         # print(err[i])
 
     return err
@@ -170,7 +169,7 @@ def err_over_steps(D,p,k,model,metric):
 
 def main():
     #preprocessing the data
-    D = load_dataset('msft')
+    D = load_dataset('aac')
     D = D[:,1].astype(float)
     D = np.expand_dims(D,axis=2)
 
@@ -222,18 +221,18 @@ def main():
     print('MSE: %f\tMAE: %f' % (mse,mae))
     
     # error over predict_steps
-    err = err_over_steps(
-        D_test,
-        time_steps,
-        predict_steps,
-        model,
-        mean_absolute_error
-    )
+    # err = err_over_steps(
+    #     D_test,
+    #     time_steps,
+    #     predict_steps,
+    #     model,
+    #     mean_absolute_error
+    # )
 
     plt.plot(y_test)
     plt.plot(y_pred)
-    # plt.show()
+    plt.show()
    
 
 if __name__ == '__main__':
-    main1()
+    main()
