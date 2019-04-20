@@ -67,9 +67,9 @@ def split_train_test(X,y,test_size=.33):
 # given original dataset size of test sample
 def split_dataset_train_test(D,test_size=.33):
     t = int(len(D) * (1-test_size))
-    D_test = D[0:t]
-    D_train = D[t:len(D)]
-    return D_train,D_test
+    D_train = D[0:t]
+    D_test = D[t:len(D)]
+    return D_test,D_train
 
 
 # given Sequential model and input X,
@@ -169,7 +169,7 @@ def err_over_steps(D,p,k,model,metric):
 
 def main():
     #preprocessing the data
-    D = load_dataset('aac')
+    D = load_dataset('fb')
     D = D[:,1].astype(float)
     D = np.expand_dims(D,axis=2)
 
