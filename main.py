@@ -103,7 +103,7 @@ def time_series_predict(model,X,k=1):
     return np.apply_along_axis(predict_foward_steps,1,X)            
 
 
-def simple_lstm_network(time_steps):
+def simple_lstm_network(time_steps, N):
     model = Sequential()
 
     # first layer  
@@ -121,7 +121,7 @@ def simple_lstm_network(time_steps):
 
     # second layer
     model.add(LSTM(
-        units=time_steps // 2,
+        units= N // time_steps,
         # return_sequences=True,
         activation='tanh',
         recurrent_activation='sigmoid',
@@ -150,7 +150,7 @@ def simple_lstm_network(time_steps):
 def err_over_steps(D,p,k,model,metric):
     err = np.zeros(k)  # allocate array
     # predict time steps from 1 to k steps
-    for i in range(1,k):
+    for i in range(1,k + 1):
         X,y_true = process_dataset(
             D,look_back=p,look_ahead=i
         )
@@ -161,8 +161,8 @@ def err_over_steps(D,p,k,model,metric):
         y_pred = y_pred.flatten()
         y_true = y_true.flatten()
 
-        err[i] = metric(y_true,y_pred)
-        # print(err[i])
+        err[i - 1] = metric(y_true,y_pred)
+        # print(err[i - 1])
 
     return err
 
@@ -178,6 +178,10 @@ def main():
     predict_steps = 10
 
     D_test,D_train = split_dataset_train_test(D)
+    N = len(D_train)
+    testHigh = np.max(D_test)
+    testLow = np.min(D_test)
+    testDelta = testHigh - testLow
 
     # index training and test sets
     X_train,y_train = process_dataset(
@@ -197,7 +201,8 @@ def main():
     X_test = np.expand_dims(X_test,axis=2)
 
     model = simple_lstm_network(
-        time_steps=time_steps
+        time_steps=time_steps,
+        N=N
     )
 
     model.fit(
@@ -212,8 +217,11 @@ def main():
         model,X_test,k=predict_steps
     )
 
-    y_pred = y_pred.flatten()
-    y_test = y_test.flatten()
+    y_Pred = testDelta * y_pred + testLow
+    y_Test = testDelta * y_test + testLow
+    plt.plot(y_Test)
+    plt.plot(y_Pred)
+    plt.show()
 
     mae = mean_absolute_error(y_test, y_pred)
     mse = mean_squared_error(y_test, y_pred)
@@ -221,16 +229,19 @@ def main():
     print('MSE: %f\tMAE: %f' % (mse,mae))
     
     # error over predict_steps
-    # err = err_over_steps(
-    #     D_test,
-    #     time_steps,
-    #     predict_steps,
-    #     model,
-    #     mean_absolute_error
-    # )
+    err = err_over_steps(
+        D_test,
+        time_steps,
+        predict_steps,
+        model,
+        mean_absolute_error
+    )
 
     plt.plot(y_test)
     plt.plot(y_pred)
+    plt.show()
+
+    plt.plot(err_over_steps(D_test, time_steps, predict_steps, model, mean_absolute_error))
     plt.show()
    
 
