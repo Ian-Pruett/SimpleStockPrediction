@@ -7,6 +7,7 @@ import tensorflow as tf
 from tensorflow.keras import Sequential
 from tensorflow.keras.layers import Dense, Dropout
 from tensorflow.keras.layers import LSTM, TimeDistributed
+from tensorflow.keras.utils import plot_model
 
 
 # define base directory this changes 
@@ -67,9 +68,9 @@ def split_train_test(X,y,test_size=.33):
 # given original dataset size of test sample
 def split_dataset_train_test(D,test_size=.33):
     t = int(len(D) * (1-test_size))
-    D_test = D[0:t]
-    D_train = D[t:len(D)]
-    return D_train,D_test
+    D_train = D[0:t]
+    D_test = D[t:len(D)]
+    return D_test,D_train
 
 
 # given Sequential model and input X,
@@ -114,7 +115,7 @@ def simple_lstm_network(time_steps, N):
         recurrent_activation='sigmoid',
         unroll=False,
         use_bias=True,
-        name='sirst'
+        name='Input_LSTM'
     ))
     
     model.add(Dropout(0.2))
@@ -127,13 +128,13 @@ def simple_lstm_network(time_steps, N):
         recurrent_activation='sigmoid',
         unroll=False,
         use_bias=True,
-        name='second'
+        name='Hidden_LSTM'
     ))
     
     model.add(Dropout(0.2))
 
     # output layer
-    model.add((Dense(1)))
+    model.add((Dense(1,name='Output')))
 
     model.compile(
         loss='mse',
@@ -162,20 +163,21 @@ def err_over_steps(D,p,k,model,metric):
         y_true = y_true.flatten()
 
         err[i - 1] = metric(y_true,y_pred)
-        # print(err[i - 1])
+        print(err[i - 1])
 
     return err
 
 
-def main():
+def main(stock):
+
     #preprocessing the data
-    D = load_dataset('aac')
+    D = load_dataset(stock)
     D = D[:,1].astype(float)
     D = np.expand_dims(D,axis=2)
 
     # define time steps, prev and foward
     time_steps = 30
-    predict_steps = 10
+    predict_steps = 20
 
     D_test,D_train = split_dataset_train_test(D)
     N = len(D_train)
@@ -211,22 +213,31 @@ def main():
         epochs=5
     )
 
-    # model.save('models/my_baby.model')
+    fname = 'visuals/model_' + stock + '.png'
+    plot_model(model, to_file=fname, show_shapes=True)
 
     y_pred = time_series_predict(
         model,X_test,k=predict_steps
     )
 
+    y_test = y_test.flatten()
+    y_pred = y_pred.flatten()
+
     y_Pred = testDelta * y_pred + testLow
     y_Test = testDelta * y_test + testLow
     plt.plot(y_Test)
     plt.plot(y_Pred)
-    plt.show()
+    plt.xlabel('time steps (days)')
+    plt.ylabel('price ($)')
+    plt.title('Opening Price Over Time (%s)' % stock)
+    fname = 'visuals/complete_network_' + stock + '.png'
+    plt.savefig(fname)
+    plt.clf()
 
-    mae = mean_absolute_error(y_test, y_pred)
-    mse = mean_squared_error(y_test, y_pred)
+    # mae = mean_absolute_error(y_test, y_pred)
+    # mse = mean_squared_error(y_test, y_pred)
 
-    print('MSE: %f\tMAE: %f' % (mse,mae))
+    # print('MSE: %f\tMAE: %f' % (mse,mae))
     
     # error over predict_steps
     err = err_over_steps(
@@ -237,13 +248,16 @@ def main():
         mean_absolute_error
     )
 
-    plt.plot(y_test)
-    plt.plot(y_pred)
-    plt.show()
-
-    plt.plot(err_over_steps(D_test, time_steps, predict_steps, model, mean_absolute_error))
-    plt.show()
+    plt.xlabel('foward time steps')
+    plt.ylabel('mae')
+    plt.title('Mean Absolute Error Over Predicted Steps (%s)' % stock)
+    plt.plot(err)
+    fname = 'visuals/error_over_steps' + stock + '.png'
+    plt.savefig(fname)
+    plt.clf()
    
 
 if __name__ == '__main__':
-    main()
+    stocks = ['aapl','fb','msft','ibm','ba','nflx','amzn','aac','tsla','twtr','bp']
+    for stock in stocks:
+        main(stock)
