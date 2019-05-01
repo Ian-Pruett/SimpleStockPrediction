@@ -1,3 +1,4 @@
+from datetime import date
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics import mean_absolute_error
@@ -14,6 +15,8 @@ from tensorflow.keras.utils import plot_model
 # when running in Google CoLab 
 base_dir = ''
 
+# last update to dataset 11/10/2019
+t0 = date(2019,11,10)
 
 def load_dataset(stock):
     filepath = base_dir + 'data/Stocks/' + stock + '.us.txt'
@@ -110,7 +113,7 @@ def simple_lstm_network(time_steps, N):
     # first layer  
     model.add(LSTM(
         units=time_steps,
-        return_sequences=True,
+#        return_sequences=True,
         activation='tanh',
         recurrent_activation='sigmoid',
         unroll=False,
@@ -121,15 +124,15 @@ def simple_lstm_network(time_steps, N):
     model.add(Dropout(0.2))
 
     # second layer
-    model.add(LSTM(
-        units= N // time_steps,
-        # return_sequences=True,
-        activation='tanh',
-        recurrent_activation='sigmoid',
-        unroll=False,
-        use_bias=True,
-        name='Hidden_LSTM'
-    ))
+#    model.add(LSTM(
+#        units= N // time_steps,
+#        # return_sequences=True,
+#        activation='tanh',
+#        recurrent_activation='sigmoid',
+#        unroll=False,
+#        use_bias=True,
+#        name='Hidden_LSTM'
+#    ))
     
     model.add(Dropout(0.2))
 
@@ -173,11 +176,17 @@ def main(stock):
     #preprocessing the data
     D = load_dataset(stock)
     D = D[:,1].astype(float)
+
+    #enter time delta
+    t = date(2007, 11, 10)
+    delta = (t0-t).days
+    D = D[(D.size-delta):]
+
     D = np.expand_dims(D,axis=2)
 
     # define time steps, prev and foward
     time_steps = 30
-    predict_steps = 20
+    predict_steps = 10
 
     D_test,D_train = split_dataset_train_test(D)
     N = len(D_train)
@@ -213,7 +222,7 @@ def main(stock):
         epochs=5
     )
 
-    fname = 'visuals/model_' + stock + '.png'
+    fname = base_dir + 'visuals/model_' + stock + '.png'
     plot_model(model, to_file=fname, show_shapes=True)
 
     y_pred = time_series_predict(
@@ -230,14 +239,14 @@ def main(stock):
     plt.xlabel('time steps (days)')
     plt.ylabel('price ($)')
     plt.title('Opening Price Over Time (%s)' % stock)
-    fname = 'visuals/complete_network_' + stock + '.png'
+    fname = base_dir + 'visuals/complete_network_' + stock + '.png'
     plt.savefig(fname)
     plt.clf()
 
-    # mae = mean_absolute_error(y_test, y_pred)
-    # mse = mean_squared_error(y_test, y_pred)
+    mae = mean_absolute_error(y_test, y_pred)
+    mse = mean_squared_error(y_test, y_pred)
 
-    # print('MSE: %f\tMAE: %f' % (mse,mae))
+    print('MSE: %f\tMAE: %f' % (mse,mae))
     
     # error over predict_steps
     err = err_over_steps(
@@ -255,9 +264,145 @@ def main(stock):
     fname = 'visuals/error_over_steps' + stock + '.png'
     plt.savefig(fname)
     plt.clf()
+
+
+def main2(stocks):
+    stock1 = stocks[0]
+    stock2 = stocks[1]
+    stock3 = stocks[2]
+
+    #preprocessing the data
+    D1 = load_dataset(stock1)
+    D1 = D1[:,1].astype(float)
+
+    #enter time delta
+    t = date(2007, 11, 10)
+    delta = (t0-t).days
+    D1 = D1[(D1.size-delta):]
+
+    D1 = np.expand_dims(D1,axis=2)
+
+    #preprocessing the data
+    D2 = load_dataset(stock2)
+    D2 = D2[:,1].astype(float)
+
+    #enter time delta
+    t = date(2007, 11, 10)
+    delta = (t0-t).days
+    D2 = D2[(D2.size-delta):]
+
+    D2 = np.expand_dims(D2,axis=2)
+
+    #preprocessing the data
+    D3 = load_dataset(stock3)
+    D3 = D3[:,1].astype(float)
+
+    #enter time delta
+    t = date(2007, 11, 10)
+    delta = (t0-t).days
+    D3 = D3[(D3.size-delta):]
+
+    D3 = np.expand_dims(D3,axis=2)
+
+    # define time steps, prev and foward
+    time_steps = 30
+    predict_steps = 10
+
+    D1_test,D1_train = split_dataset_train_test(D1)
+    N1 = len(D1_train)
+
+    D2_test,D2_train = split_dataset_train_test(D2)
+    testHigh2 = np.max(D2_test)
+    testLow2 = np.min(D2_test)
+    testDelta2 = testHigh2 - testLow2
+
+    D3_test,D3_train = split_dataset_train_test(D3)
+    testHigh3 = np.max(D3_test)
+    testLow3 = np.min(D3_test)
+    testDelta3 = testHigh3 - testLow3
+
+    # index training and test sets
+    X1_train,y1_train = process_dataset(
+        D1_train,
+        look_back=time_steps,
+        look_ahead=1
+    )
+
+    X2_test,y2_test = process_dataset(
+        D2_test,
+        look_back=time_steps,
+        look_ahead=predict_steps
+    )
+
+    X3_test,y3_test = process_dataset(
+        D3_test,
+        look_back=time_steps,
+        look_ahead=predict_steps
+    )
+
+    # reshape to train lstm network
+    X1_train = np.expand_dims(X1_train,axis=2)
+    X2_test = np.expand_dims(X2_test,axis=2)
+    X3_test = np.expand_dims(X3_test,axis=2)
+
+    model = simple_lstm_network(
+        time_steps=time_steps,
+        N=N1
+    )
+
+    model.fit(
+        X1_train,y1_train,
+        batch_size=10,
+        epochs=5
+    )
+
+    y2_pred = time_series_predict(
+        model,X2_test,k=predict_steps
+    )
+
+    y2_test = y2_test.flatten()
+    y2_pred = y2_pred.flatten()
+
+    y2_Pred = testDelta2 * y2_pred + testLow2
+    y2_Test = testDelta2 * y2_test + testLow2
+    plt.plot(y2_Test)
+    plt.plot(y2_Pred)
+    plt.xlabel('time steps (days)')
+    plt.ylabel('price ($)')
+    plt.title('Opening Price Over Time (%s)' % stock2)
+    plt.show()
+
+    mae = mean_absolute_error(y2_test, y2_pred)
+    mse = mean_squared_error(y2_test, y2_pred)
+
+    print('MSE: %f\tMAE: %f' % (mse,mae))
+
+    y3_pred = time_series_predict(
+        model,X3_test,k=predict_steps
+    )
+
+    y3_test = y3_test.flatten()
+    y3_pred = y3_pred.flatten()
+
+    y3_Pred = testDelta3 * y3_pred + testLow3
+    y3_Test = testDelta3 * y3_test + testLow3
+    plt.plot(y3_Test)
+    plt.plot(y3_Pred)
+    plt.xlabel('time steps (days)')
+    plt.ylabel('price ($)')
+    plt.title('Opening Price Over Time (%s)' % stock3)
+    plt.show()
+
+    mae = mean_absolute_error(y3_test, y3_pred)
+    mse = mean_squared_error(y3_test, y3_pred)
+
+    print('MSE: %f\tMAE: %f' % (mse,mae))
    
 
 if __name__ == '__main__':
-    stocks = ['aapl','fb','msft','ibm','ba','nflx','amzn','aac','tsla','twtr','bp']
-    for stock in stocks:
-        main(stock)
+    # stocks = ['aapl','fb','msft','ibm','ba','nflx',
+    #         'amzn','aac','tsla','twtr','bp']
+    # for stock in stocks:
+    #     main(stock)
+    stocks =  ['aapl','ge','ppg']
+    main2(stocks)
