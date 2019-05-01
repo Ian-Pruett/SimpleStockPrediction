@@ -113,7 +113,7 @@ def simple_lstm_network(time_steps, N):
     # first layer  
     model.add(LSTM(
         units=time_steps,
-#        return_sequences=True,
+       return_sequences=True,
         activation='tanh',
         recurrent_activation='sigmoid',
         unroll=False,
@@ -124,15 +124,15 @@ def simple_lstm_network(time_steps, N):
     model.add(Dropout(0.2))
 
     # second layer
-#    model.add(LSTM(
-#        units= N // time_steps,
-#        # return_sequences=True,
-#        activation='tanh',
-#        recurrent_activation='sigmoid',
-#        unroll=False,
-#        use_bias=True,
-#        name='Hidden_LSTM'
-#    ))
+    model.add(LSTM(
+       units= N // time_steps,
+       # return_sequences=True,
+       activation='tanh',
+       recurrent_activation='sigmoid',
+       unroll=False,
+       use_bias=True,
+       name='Hidden_LSTM'
+   ))
     
     model.add(Dropout(0.2))
 
@@ -400,9 +400,9 @@ def main2(stocks):
    
 
 if __name__ == '__main__':
-    # stocks = ['aapl','fb','msft','ibm','ba','nflx',
-    #         'amzn','aac','tsla','twtr','bp']
-    # for stock in stocks:
-    #     main(stock)
+    stocks = ['aapl','fb','msft','ibm','ba','nflx',
+            'amzn','aac','tsla','twtr','bp']
+    for stock in stocks:
+        main(stock)
     stocks =  ['aapl','ge','ppg']
     main2(stocks)
